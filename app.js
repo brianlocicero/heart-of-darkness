@@ -1,5 +1,6 @@
 var Twit = require('twit');
 var keys = require('./keys');
+var vocabulary = require('./vocabulary');
 
 var T = new Twit({
     consumer_key: keys.consumer_key,
@@ -8,28 +9,35 @@ var T = new Twit({
     access_token_secret: keys.access_token_secret,
 });
 
-T.get('search/tweets', { q: 'hate since:2015-2-18', count:100}, function(err, data, response) {
+var loveCount = 0;
+var hateCount = 0;
+var positiveVocabulary = vocabulary.positiveVocabulary;
+var negativeVocabulary = vocabulary.negativeVocabulary;
+var sanFrancisco = [ '-122.75', '36.8', '-121.75', '37.8' ];
+var loveStream = T.stream('statuses/filter', { track: positiveVocabulary, language: 'en'});
+var hateStream = T.stream('statuses/filter', { track: negativeVocabulary, language: 'en'});
 
-  if (data === null) {
-  	console.log("No Hate!");
-  	return;
-  }
-
-  var hateCount = 0;
-
-  for (var i=0; i<data.statuses.length; i++) {
-  	hateCount += data.statuses[i].retweet_count;
-  	hateCount += data.statuses[i].favorite_count;
-  }
-
-  console.log( "Hate Score: " + hateCount );
-
+loveStream.on('tweet', function (tweet) {
+  loveCount++;
 });
 
-/*
-var stream = T.stream('statuses/filter', { track: '#apple', language: 'en' })
- 
-stream.on('tweet', function (tweet) {
-  console.log(tweet)
+hateStream.on('tweet', function (tweet) {
+  hateCount++;
 });
-*/
+
+var myTimeout = setTimeout(function() {
+
+	loveStream.stop();
+	hateStream.stop();
+
+
+	console.log("Love: " + loveCount);
+	console.log("Hate: " + hateCount);
+
+	if (loveCount > hateCount) {
+		console.log("L'amore vince sempre'");
+	} else {
+		console.log("Odio. O dio.");
+	}
+
+}, 15000);
